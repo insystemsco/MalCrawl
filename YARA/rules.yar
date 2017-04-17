@@ -400,11 +400,7 @@ rule mutex {
 
   condition:
     #a >= 5
-}
-      
-      
-      
-      
+}      
 
 // Other
 
