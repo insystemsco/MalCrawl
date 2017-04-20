@@ -11,22 +11,24 @@ def visible(element):
     return True
 
 def extract_data(link):
-	r = urllib.urlopen(link)
-	soup = BeautifulSoup(r,"lxml")
+	file = open("Crawler_Output.txt","a")
+
+	req = urllib.urlopen(link)
+	soup = BeautifulSoup(req,"lxml")
 	data = soup.findAll(text=True)
 	result = filter(visible, data)
-	print result
+	file.write(str(result))
 
 def main():
-	#url = raw_input("Enter a website to extract the URL's from: ")
 	
 	my_link = ''
 	temp = ''
 	link_list = []
-	
-	url = raw_input("Enter a github URL: ")
 
-	req  = requests.get("http://" + url)
+	url = raw_input("Enter a github URL: ")
+	#url = "https://github.com/hshantanu/Entropy-Calculator/blob/master/Source.cpp"
+
+	req  = requests.get(url)
 	data = req.text
 	soup = BeautifulSoup(data,"lxml")
 
