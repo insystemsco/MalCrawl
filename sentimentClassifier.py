@@ -1,15 +1,20 @@
-from gensim.models import word2vec
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn import svm
+from sklearn.metrics import classification_report
 from sklearn.externals import joblib
 from sklearn.cross_validation import cross_val_score
 
-import os, numpy, copy, math, string, mimetypes
+import os, mimetypes, string
+
+# Reference: https://gist.github.com/bonzanini/c9248a239bbab0e0d42e#file-sentiment_classification-py-L41
+
+
 
 # Global dict containing malicious and clean source code with labels
 trainingData = {}
 trainingData['files'] = []
 trainingData['classification'] = []
+
 
 # Traverses all files and directories starting from a root directory
 # Adds normalized files to trainingData dict
@@ -57,14 +62,14 @@ def getCorpus(path, classification):
                     if len(tempFile) > 0:
                         trainingData['files'].append(" ".join(tempFile))
                         trainingData['classification'].append(classification)
-                        
+2                        
             else:
                 print "Skipping file: ", fileName, fileType
 
     return
 
 def main(mPath, cPath):
-
+    
     # Get input from files
     getCorpus(mPath, 'malware')
     print "Read malicious source code"
@@ -72,31 +77,25 @@ def main(mPath, cPath):
     getCorpus(cPath, 'clean')
     print "Read clean source code"
 
-    # CountVectorizer uses # of words - will want to improve to TF/IDF later
-    print "Setting up CountVectorizer"
-    trainingVectorizer = CountVectorizer(stop_words='english')
-    trainingFitTransform = trainingVectorizer.fit_transform(trainingData['files'])
-    trainingFitTransform = trainingFitTransform.toarray()
+    print "Creating and fitting tfidf vectorizer"
+    tfidfVectorizer = TfidfVectorizer(min_df=1, max_df=0.8, sublinear_tf=True, use_idf=True)
+    trainingVectors = tfidfVectorizer.fit_transform(trainingData['files'])
 
-    # Create random forest
-    randomForest = RandomForestClassifier(n_estimators=100)
-    randomForest.classes_ = trainingData['classification']
+    classifier = svm.LinearSVC()
 
-    # Train random forest
-    print("Training random forest")
-    randomForest = randomForest.fit(trainingFitTransform, trainingData['classification'])
-    print("Random forest trained!")
+    print "Training classifier"
+    classifier.fit(trainingVectors, trainingData['classification'])
 
-    # Save random forest to disk
-    print("Saving random forest to disk")
-    joblib.dump(randomForest, "randomForest.pkl")
+    print "Saving classifier"
+    joblib.dump(classifier, "sentimentClassifier.pkl")
+    print "Saved to classifier.pkl"
 
-    # Apply tests to random forest
-    print("Performing cross validation tests")
-    scores = cross_val_score(randomForest, trainingFitTransform, trainingData['classification'], cv=5)
-    print "\nAccuracy of each cross-validation test:"
-    for score in scores:
-        print score
-        
+    print "Performing cross validation tests"
+    numValidations = 10
+    scores = cross_val_score(classifier, trainingVectors, trainingData['classification'], cv=numValidations)
+
+    print "\nResults of cross validation tests:"
+    for i in range(numValidations):
+        print "\t",scores[i]
 
 main("Malware", "Clean")    

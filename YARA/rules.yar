@@ -221,6 +221,24 @@ rule paypal_5 {
     #a >= 5
 }
 
+// TOR
+
+rule tor_5 {
+  strings:
+    $a = "tor"
+
+  condition:
+    #a >= 5
+}
+
+rule tor_onion {
+  strings:
+    $a = ".onion"
+
+  condition:
+    $a
+}
+
 // Bitcoin
 
 rule bitcoin_5 {
@@ -255,13 +273,28 @@ rule bitcoin_blockr_5 {
     #a >= 5 
 }
 
-rule bitcoin_wallet {
+rule bitcoin_bitmessage {
   strings:
-    $a = /[13][a-km-zA-HJ-NP-Z1-9]{25,34}/ fullword ascii wide nocase
+    $a = "bitmessage" ascii wide nocase
 
   condition:
-    all of them
+    $a
 }
+
+/*
+rule bitcoin_wallet {
+  strings:
+    $a1 = "bitcoin" ascii wide nocase
+    $a2 = "btc" ascii wide nocase
+    $a3 = "blockchain" ascii wide nocase
+    $a4 = "blockr" ascii wide nocase
+    $a5 = "wallet" ascii wide nocase
+
+    $b = /\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}/ fullword ascii wide nocase
+
+  condition:
+    1 of ($a*) and $b
+}*/
 
 // Ransomware note
 
@@ -281,9 +314,9 @@ rule ransom_payment_5 {
     #a >= 5	
 }
 
-rule ransom_locker_5 {
+rule ransom_lock_5 {
   strings:
-    $a = "locker" ascii wide nocase
+    $a = "lock" ascii wide nocase
 
   condition:
     #a >= 5
@@ -301,11 +334,12 @@ rule network {
 
 rule network_cnc {
   strings:
-    $a = /(c&c)|(c2)/ fullword ascii wide nocase
-    $b = "cnc" ascii wide nocase
+    $a = "c&c" fullword ascii wide nocase
+    $b = "cnc" fullword ascii wide nocase
+    $c = "c2" fullword ascii nocase
 
   condition:
-    #a >= 5 or #b >= 5
+    #a + #b + #c >= 5
 }
 
 rule network_exfil {
@@ -350,7 +384,15 @@ rule network_eth0 {
 
 // Crypto
 
-rule crypto {
+rule cipher_5 {
+  strings:
+    $a = "cipher" ascii wide nocase
+
+  condition:
+    #a >= 5
+}
+
+rule crypto_5 {
   strings:
     $a = "crypt" ascii wide nocase
 
@@ -360,13 +402,33 @@ rule crypto {
 
 rule crypto_aes {
   strings:
+    $a = "aes"
+    $aes1 = /\baes.128/ fullword ascii wide nocase
+    $aes2 = /\baes.256/ fullword ascii wide nocase
+
+  condition:
+    $a and 1 of ($aes*)
+}
+
+rule crypto_rsa {
+  strings:
+    $a = "rsa"
+    $rsa1 = /\brsa.2048/ fullword ascii wide nocase
+    $rsa2 = /\brsa.4096/ fullword ascii wide nocase
+
+  condition:
+    $a and 1 of ($rsa*)
+}
+
+rule crypto_aes_5 {
+  strings:
     $a = "aes" ascii wide nocase
 
   condition:
     #a >= 5
 }
 
-rule crypto_rsa {
+rule crypto_rsa_5 {
   strings:
     $a = "rsa" ascii wide nocase
 
@@ -376,7 +438,7 @@ rule crypto_rsa {
 
 // Packing
 
-rule packer_upx {
+rule packer_upx_5 {
   strings:
     $a = "upx" ascii wide nocase
 
@@ -384,7 +446,7 @@ rule packer_upx {
     #a >= 5
 }
 
-rule packer_nsis {
+rule packer_nsis_5 {
   strings:
     $a = "nsis" ascii wide nocase
 
@@ -394,13 +456,21 @@ rule packer_nsis {
 
 // Mutex
 
-rule mutex {
+rule mutex_5 {
   strings:
     $a = "mutex" ascii wide nocase
 
   condition:
     #a >= 5
-}      
+}
+
+rule semaphore_5 {
+  strings:
+    $a = "semaphore" ascii wide nocase
+
+  condition:
+    #a >= 5    
+}
 
 // Other
 
