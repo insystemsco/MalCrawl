@@ -6,7 +6,7 @@ import tensorflow as tf
 
 wordCounts = {}
 
-for root, subFolders, fileNames in os.walk('/home/rj/Downloads/theZoo-master/malwares/Source/Original'):
+for root, subFolders, fileNames in os.walk('/home/shantanu/Downloads/theZoo-master/malwares/Source/Original'):
     for fileName in fileNames:
         with open(os.path.join(root, fileName), 'r') as f:
             for lines in f:
