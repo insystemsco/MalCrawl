@@ -44,6 +44,7 @@ def main():
 	link_list = link_list[1:]
 
 	for val in link_list:
+		print val
 		extract_data(val)
 
 main()
