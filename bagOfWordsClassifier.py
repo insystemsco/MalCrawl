@@ -1,22 +1,38 @@
-from gensim.models import word2vec
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.ensemble import RandomForestClassifier
+from sklearn import svm
+from sklearn.metrics import classification_report
 from sklearn.externals import joblib
 from sklearn.cross_validation import cross_val_score
 
-import os, numpy, copy, math, string, mimetypes
+import os, mimetypes, string, re
 
 # Global dict containing malicious and clean source code with labels
 trainingData = {}
 trainingData['files'] = []
 trainingData['classification'] = []
 
+numValidations = 10
+
+mimeRegexes = [
+    "text",
+    "application\/javascript",
+    "application\/xml",
+    "application\/svg\+xml",
+    "application\/postcript",
+    "application\/x-sql",
+    "application\/json",
+    "application\/x-msdos-program",
+    "application\/x-ruby",
+    "application\/rtf"
+]
+
+# Join all mimeRegexes as ( )|( )|( )
+combinedMimeRegex = "(" + ")|(".join(mimeRegexes) + ")"
+
 # Traverses all files and directories starting from a root directory
 # Adds normalized files to trainingData dict
 
 def getCorpus(path, classification):
-    
-    print "Reading source code"
     
     for root, subFolders, fileNames in os.walk(path):
         for fileName in fileNames:
@@ -24,7 +40,7 @@ def getCorpus(path, classification):
             # Learn type of file - only want text files
             fileType = mimetypes.guess_type(fileName)
             
-            if (fileType[1] is None and fileType[0] is None) or (len(fileType[0]) >= 7 and (fileType[0][:7] == 'text/x-') or (len(fileType[0]) >= 10 and fileType[0][:10] == 'text/plain')):
+            if (fileType[1] is None and fileType[0] is None) or re.match(combinedMimeRegex, fileType[0]):
                 with open(os.path.join(root, fileName), 'rb') as f:
 
                     tempString = ""
@@ -40,7 +56,7 @@ def getCorpus(path, classification):
                             tempString += character
                         
                         elif character in ['-', '_']:
-                            tempString += character
+                            pass
 
                         elif len(tempString) >= 4 and len(tempString) <= 25:
                             tempFile.append(tempString)
@@ -66,37 +82,38 @@ def getCorpus(path, classification):
 def main(mPath, cPath):
 
     # Get input from files
+    print "Reading malicious source code"
     getCorpus(mPath, 'malware')
-    print "Read malicious source code"
+    print "Finished reading malicious source code"
 
+    print "Reading clean source code"
     getCorpus(cPath, 'clean')
-    print "Read clean source code"
+    print "Finished reading clean source code"
 
     # CountVectorizer uses # of words - will want to improve to TF/IDF later
-    print "Setting up CountVectorizer"
+    print "Creating and fitting CountVectorizer"
     trainingVectorizer = CountVectorizer(stop_words='english')
-    trainingFitTransform = trainingVectorizer.fit_transform(trainingData['files'])
-    trainingFitTransform = trainingFitTransform.toarray()
+    trainingVectors = trainingVectorizer.fit_transform(trainingData['files'])
+                                                                 
+    # Create support vector machine
+    classifier = svm.LinearSVC()
 
-    # Create random forest
-    randomForest = RandomForestClassifier(n_estimators=100)
-    randomForest.classes_ = trainingData['classification']
+    # Train support vector machine
+    print("Training linear support vector machine")
+    classifier.fit(trainingVectors, trainingData['classification'])
+    print("Support vector machine trained!")
 
-    # Train random forest
-    print("Training random forest")
-    randomForest = randomForest.fit(trainingFitTransform, trainingData['classification'])
-    print("Random forest trained!")
+    # Save support vector machine to disk
+    print("Saving support vector machine to disk")
+    joblib.dump(classifier, "bagOfWordsClassifier.pkl")
 
-    # Save random forest to disk
-    print("Saving random forest to disk")
-    joblib.dump(randomForest, "bagOfWordsClassifier.pkl")
-
-    # Apply tests to random forest
+    # Measure accuracy of support vector machine    
     print("Performing cross validation tests")
-    scores = cross_val_score(randomForest, trainingFitTransform, trainingData['classification'], cv=5)
+    scores = cross_val_score(classifier, trainingVectors, trainingData['classification'], cv=numValidations)
     print "\nAccuracy of each cross-validation test:"
-    for score in scores:
-        print score
-        
+    for i in range(numValidations):
+        print "\tTest " + str(i) + ": " + str(scores[i] * 100) + "%"                
 
+    print
+    
 main("Malware", "Clean")    

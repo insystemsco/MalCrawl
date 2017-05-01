@@ -241,7 +241,7 @@ rule gen_hack_5 {
     $a = "hack" ascii wide nocase
 
   condition:
-    gen_hack-3 and #a >= 5
+    gen_hack_3 and #a >= 5
 }
 
 rule gen_keylogger_1 {
@@ -462,20 +462,20 @@ rule gen_worm_5 {
 
 // ---- Registry rules ---- //
 
-rule registry_5 {
+rule registry_1 {
   strings:
     $a = "registry" ascii wide nocase
 
   condition:
-    all of them
+    $a
 }
 
-rule registry_5 {
+rule registry_3 {
   strings:
-      $a = "registry" ascii wide nocase
+    $a = "registry" ascii wide nocase
 
   condition:
-    all of them
+    registry_1 and #a >= 3
 }     
 
 rule registry_5 {
@@ -483,7 +483,7 @@ rule registry_5 {
     $a = "registry" ascii wide nocase
 
   condition:
-    all of them
+    registry_3 and #a >= 5
 }
 
 rule registry_run {
@@ -612,7 +612,7 @@ rule bank_5 {
   strings:
     $a = /(bank)|(banco)/ ascii wide nocase
 
-  condition2:
+  condition:
     bank_3 and #a >= 5
 }
 
@@ -866,7 +866,7 @@ rule ransom_pay_3 {
     $a = "pay" ascii wide nocase
 
   condition:
-    ransom_pay_1 #a >= 3
+    ransom_pay_1 and #a >= 3
 }
 
 rule ransom_pay_5 {
@@ -927,7 +927,7 @@ rule network_5 {
     network_3 and #a >= 5
 }
 
-rule network_cnc_5 {
+rule network_cnc_1 {
   strings:
     $a = "c&c" fullword ascii wide nocase
     $b = "cnc" fullword ascii wide nocase
@@ -1203,7 +1203,7 @@ rule crypto_rsa_1 {
     $a
 }
 
-rule crypto_rsa_5 {
+rule crypto_rsa_3 {
   strings:
     $a = "rsa" ascii wide nocase
 

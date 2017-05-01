@@ -4,7 +4,7 @@ from sklearn.metrics import classification_report
 from sklearn.externals import joblib
 from sklearn.cross_validation import cross_val_score
 
-import os, mimetypes, subprocess, copy
+import os, subprocess, copy
 
 # Each value in the vector corresponds to the number of times each yara rule hits, normalized by # of files scanned
 
@@ -14,14 +14,14 @@ yaraDict = {}
 # Key: Yara rule name, Value: 0
 def yaraDictInit():
 
-    with open("./YARA/rules.yar") as f:
+    with open("./YARA/heuristics.yar") as f:
 
         for line in f.readlines():
             
             line = line.split()
             if len(line) > 1  and line[0] == "rule":
                 yaraDict[line[1]] = 0
-
+                
     return
 
 # Opens one github repository and scans it with YARA. Returns results in a dict
@@ -34,23 +34,16 @@ def yaraScanDir(path):
     
     for root, subFolders, fileNames in os.walk(path):
         for fileName in fileNames:
-
-            # Learn type of file - only want text files
-            fileType = mimetypes.guess_type(fileName)
-            
-            if (fileType[1] is None and fileType[0] is None) or (len(fileType[0]) >= 7 and (fileType[0][:7] == 'text/x-') or (len(fileType[0]) >= 10 and fileType[0][:10] == 'text/plain')):
-
-                #print fileName
                 
-                # Scan repository with YARA
-                subproc = subprocess.Popen(["yara", "./YARA/rules.yar", os.path.join(root, fileName)], stdout=subprocess.PIPE)
-
-                # Record number of hits into a dictionary
-                for line in iter(subproc.stdout.readline, ''):
-                    line = line.split()
-                    yaraResults[line[0]] += 1                    
-
-                numScanned += 1
+            # Scan repository with 3 sets of YARA rules
+            subproc = subprocess.Popen(["yara", "./YARA/heuristics.yar", os.path.join(root, fileName)], stdout=subprocess.PIPE)
+            
+            # Record number of hits into dictionary
+            for line in iter(subproc.stdout.readline, ''):
+                line = line.split()
+                yaraResults[line[0]] += 1
+                
+            numScanned += 1
 
     # Normalize by number of files in repository
     for key in yaraResults.keys():
@@ -83,25 +76,28 @@ def main(mPath, cPath):
 
     # Call yaraScanDir on all malicious and clean repositories
     for repository in mRepositories:
+        print "Scanning malware repository", repository, "...",
         trainingData['files'].append(yaraScanDir(repository))
         trainingData['classification'].append("malware")
-        print "Scanned malware repository", repository
+        print "Done."
         
     for repository in cRepositories:
+        print "Scanning clean repository", repository, "...",
         trainingData['files'].append(yaraScanDir(repository))
         trainingData['classification'].append("clean")
-        print "Scanned clean repository", repository
+        print "Done."
                 
     # DictVectorizer
+    print "Creating and fitting dict vectorizer"
     dictVectorizer = DictVectorizer(sparse=False)
     trainingVectors = dictVectorizer.fit_transform(trainingData['files'])
 
     classifier = svm.LinearSVC()
 
-    print "Training classifier"
+    print "Training YARA classifier"
     classifier.fit(trainingVectors, trainingData['classification'])
 
-    print "Saving classifier"
+    print "Saving YARA classifier"
     joblib.dump(classifier, "yaraClassifier.pkl")
     print "Saved to yaraClassifier.pkl"
 
@@ -111,6 +107,8 @@ def main(mPath, cPath):
 
     print "\nResults of cross validation tests:"
     for i in range(numValidations):
-        print "\t",scores[i]
-    
+        print "\tTest " + str(i) + ": " + str(scores[i] * 100) + "%"
+        
+    print
+        
 main("Malware", "Clean")
