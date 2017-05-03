@@ -57,7 +57,7 @@ def getCorpus(path, classification):
                         
                         elif character in ['-', '_']:
                             pass
-
+                            
                         elif len(tempString) >= 4 and len(tempString) <= 25:
                             tempFile.append(tempString)
                             tempString = ""
@@ -89,11 +89,11 @@ def main(mPath, cPath):
     print "Reading clean source code"
     getCorpus(cPath, 'clean')
     print "Finished reading clean source code"
-    
+
     print "Creating and fitting tfidf vectorizer"
     tfidfVectorizer = TfidfVectorizer()
     trainingVectors = tfidfVectorizer.fit_transform(trainingData['files'])
-                                                                 
+    
     # Create support vector machine
     classifier = svm.LinearSVC()
 
@@ -104,6 +104,8 @@ def main(mPath, cPath):
 
     # Save support vector machine to disk
     print("Saving support vector machine to disk")
+    joblib.dump(tfidfVectorizer, "tfidfVectorizer.pkl")
+    joblib.dump(trainingVectors, "topicModelingVectors.pkl")
     joblib.dump(classifier, "topicModelingClassifier.pkl")
 
     # Measure accuracy of support vector machine    

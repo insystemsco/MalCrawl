@@ -105,8 +105,11 @@ def main(mPath, cPath):
 
     # Save support vector machine to disk
     print("Saving support vector machine to disk")
-    joblib.dump(classifier, "bagOfWordsClassifier.pkl")
 
+    joblib.dump(trainingVectorizer, "countVectorizer.pkl")
+    joblib.dump(trainingVectors, "bagOfWordsVectors.pkl")
+    joblib.dump(classifier, "bagOfWordsClassifier.pkl")
+    
     # Measure accuracy of support vector machine    
     print("Performing cross validation tests")
     scores = cross_val_score(classifier, trainingVectors, trainingData['classification'], cv=numValidations)
