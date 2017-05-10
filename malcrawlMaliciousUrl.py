@@ -87,7 +87,9 @@ def crawl(vectorizer, classifier):
     links = []
     sourceCodeUrls = []
     sourceCode = []
-        
+
+    """
+    
     # Keep trying to find an available repository
     while not responseJson.get("url"):
 
@@ -98,18 +100,37 @@ def crawl(vectorizer, classifier):
         response  = requests.get(url)
         responseJson = json.loads(response.text)
 
-    apiUrl = responseJson["url"] + "/contents/"    
+    apiUrl = responseJson["url"] + "/contents/"
+
+    #githubUrl = "https://github.com/joyce8/MalCrawl/"
+    githubUrl = "https://github.com/tim-lau/merging-data/tree/master/css"
+    ownerRepo = re.search("https:\/\/github\.com\/(.+)", githubUrl).groups()[0]
+    apiUrl = "https://api.github.com/repos/{}/contents".format(ownerRepo)
+    print "Crawling " + apiUrl
+
+    """
+    apiUrl = "https://api.github.com/repos/fdiskyou/malware/contents/TinyNuke"
+    #apiUrl = "https://api.github.com/repos/fdiskyou/malware/contents/ZeroAccess"
+    #apiUrl = "https://api.github.com/repos/fdiskyou/malware/contents/Trochilus"
+    #apiUrl = "https://api.github.com/repos/fdiskyou/malware/contents/Pony"
+    #apiUrl = "https://api.github.com/repos/fdiskyou/malware/contents/Hidden-tear"
+    #apiUrl = "https://api.github.com/repos/fdiskyou/malware/contents/Eda2"
+    #apiUrl = "https://api.github.com/repos/fdiskyou/malware/contents/Crimepack3.1.3"
+    #apiUrl = "https://api.github.com/repos/gbrindisi/malware/contents/android/gmbot"
     
-    ownerRepo = re.search("https:\/\/api.github\.com\/repos\/(.+)/contents/", apiUrl).groups()[0]
-    githubUrl = "https://github.com/{}".format(ownerRepo)
-    print "Crawling " + str(githubUrl)    
+    
+    #ownerRepo = re.search("https:\/\/api.github\.com\/repos\/(.+)/contents/", apiUrl).groups()[0]
+    #githubUrl = "https://github.com/{}".format(ownerRepo)
+    #print "Crawling " + str(githubUrl)    
     
     apiUrl = addOAuthToken(apiUrl)
+    print "apiUrl: ", apiUrl
     response = requests.get(apiUrl)
     contents = json.loads(response.text)
 
     for link in contents:
-        if not isinstance(link, unicode) and link.get("type"):
+        #print link
+        if link.get("type"):
             links.append([link["download_url"], link["type"], link["url"]])
                     
     # Breadth-first search through all github directories
@@ -117,21 +138,20 @@ def crawl(vectorizer, classifier):
 
         # Process a file
         if links[0][1] == "file":
-
-            fileType = None
-            if isinstance(links[0][0], unicode):
-                fileType = mimetypes.guess_type(links[0][0])
             
-            if fileType is not None:
-                if (fileType[1] is None and fileType[0] is None) or re.match(combinedMimeRegex, fileType[0]):
-                    tempApiUrl = addOAuthToken(links[0][0])
-                    sourceCodeUrls.append(tempApiUrl)
+            fileType = mimetypes.guess_type(links[0][0])
+
+            if (fileType[1] is None and fileType[0] is None) or re.match(combinedMimeRegex, fileType[0]):
+                tempApiUrl = addOAuthToken(links[0][0])
+                #print "tempApiUrlFile", tempApiUrl
+                sourceCodeUrls.append(tempApiUrl)
 
         # Process adirectory, adding all of its files and subdirectories
         elif links[0][1] == "dir":
 
             tempApiUrl = addOAuthToken(links[0][2])
             urlList = list(urlparse.urlparse(tempApiUrl))
+            #print "tempApiUrlDir: ", tempApiUrl
             response = requests.get(tempApiUrl)
             contents = json.loads(response.text)
 
@@ -172,18 +192,18 @@ def crawl(vectorizer, classifier):
         else:
             print "CLEAN | score: " + str(malScore) + " | malicious: " + str(malCount) + " | clean: " + str(cleanCount * -1)
 
+        print
             
     else:
         print "No readable source code"   
 
-    print
 
 def main(vectorizerPath, classifierPath):
         
     print "Loading pkl files"
     vectorizer = joblib.load(vectorizerPath)
     classifier = joblib.load(classifierPath)
-    
+
     while True:
         crawl(vectorizer, classifier)
 
