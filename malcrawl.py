@@ -136,7 +136,7 @@ def crawl(vectorizer, classifier):
             contents = json.loads(response.text)
 
             for link in contents:
-                if link.get("type"):
+                if not isinstance(link, unicode) and link.get("type"):
                     links.append([link["download_url"], link["type"], link["url"]])
 
         else:
@@ -147,7 +147,6 @@ def crawl(vectorizer, classifier):
         
     for url in sourceCodeUrls:
         sourceCode.append(getCorpus(url))
-
     
     if len(sourceCode) > 0:
 
