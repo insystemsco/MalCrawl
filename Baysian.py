@@ -1,8 +1,8 @@
 import os, mimetypes, string, re
 from reverend.thomas import Bayes
 import reverend
-
-bayes = Bayes()
+import pickle
+import types
 
 mimeRegexes = [
     "text",
@@ -21,6 +21,30 @@ numValidations = 10
 
 # Join all mimeRegexes as ( )|( )|( )
 combinedMimeRegex = "(" + ")|(".join(mimeRegexes) + ")"
+
+#http://stackoverflow.com/questions/15499170/how-to-remove-instancemethod-objects-for-the-sake-of-pickle-without-modifying
+#For saving the pickle file.
+
+def Bayes__getstate__(self):
+    state = {}
+    for attr, value in self.__dict__.iteritems():
+        if not isinstance(value, types.MethodType):
+            state[attr] = value
+        elif attr == 'combiner' and value.__name__ == 'robinson':
+            # by default, self.combiner is set to self.robinson
+            state['combiner'] = None
+    return state
+
+def Bayes__setstate__(self, state):
+    self.__dict__.update(state)
+    # support the default combiner (an instance method):
+    if 'combiner' in state and state['combiner'] is None:
+        self.combiner = self.robinson
+
+Bayes.__getstate__ = Bayes__getstate__
+Bayes.__setstate__ = Bayes__setstate__
+
+bayes = Bayes()
 
 
 # Traverses all files and directories starting from a root directory
@@ -134,5 +158,7 @@ def main(mPath, cPath):
 
     print "Lets guess"
     testCorpus("TestData")
+
+    bayes.save('Bayes.pkl')
     
 main("Malware", "Clean")    
