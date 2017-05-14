@@ -1,6 +1,7 @@
 # MalCrawl
 
 Crawler to identify malicious source code on GitHub with the help of Machine Learning. This is a Cybersecurity and Machine Learning project. 
+Please refer MalCrawlWhitepaper.pdf for more details.
 
 Requirements:
     sklearn
